@@ -1,0 +1,6 @@
+# Local-only tracking notes (references / design log) — not shared
+docs/
+
+# Simulation outputs (per-run folders, figures, GIFs, sweep results)
+smoke_grenade/results/
+results/
