@@ -1,0 +1,130 @@
+\documentclass{CFD2017}
+\usepackage{CFD2017}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%This template is created for complying with the author instructions for the
+%course Intro. CFD (4RC30)
+%
+%Questions/comments regarding bugs/errors in the template and associated files are welcome.
+%Only limited support is given with respect to functionality, additional packages, or LaTeX in general.
+%Please refer to e.g. https://www.latex-project.org/help/ for general LaTeX assistance and guidelines.
+
+%Required files:
+%   ExampleFile.tex
+%   ExampleFile.nls
+%   CFD2017.bst
+%   CFD2017.cls
+%   CFD2017.sty
+%   References.bib
+
+%Example-specific files:
+%   figure.eps
+%   Table.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\title{Industrial Applications of CFD }
+\paperID{23-3-2026}
+\author{Ola}{Nordmann} %{forename}{surname}
+\address{student ID: XXXXXXXX E-mail: o.nordmann@email.com}
+\author{Zhi}{L. Xie}
+\address{student ID: XXXXXXXX E-mail: z.l.xie@email.com}
+\groupID{group number: 12}
+
+
+\begin{document}
+\maketitle  %create the title page
+\headers   %create the page headers and footers
+
+\abstract{
+  This file is an example \LaTeX file for submission to Intro. CFD.  A
+  limit of 15 pages applies (submitted file size < 10MB).
+}
+\keywords{
+  CFD, hydrodynamics, chemical reactors
+}
+\normalfont\normalsize
+
+
+
+%\section{Nomenclature}
+A complete list of symbols used, with dimensions, is required.
+%the nomenclature needs to be entered into the file ExampleFile.nls
+\printnomenclature[0.7cm]
+\vskip .1em
+
+
+\section{Introduction}
+The introduction goes here.
+
+
+\newpage
+
+
+
+\section{Model Description}
+You should give a thorough description of your model.
+\vspace{4cm}
+\subsection{Example of Subheading}
+Here is how to produce a numbered equation under a second level
+heading \cite{James1988}.
+\vspace{2cm}\\
+\emph{Continuity equation}
+\begin{equation}
+  \frac{\partial \rho_G}{\partial t}+\nabla\left(\rho_G\mathbf
+    u\right)=0
+\end{equation}
+
+\subsubsection*{Example of Sub-subheading}
+This is how \cite{Luke1988} produced an unnumbered equation under a
+third level heading.
+\begin{equation}
+  \mathbf J=\sigma(\mathbf E+\mathbf u\times\mathbf B)
+\end{equation}
+
+\newpage
+
+\InsFig{figure}{Schematic diagram of geometry.}{label1}
+\InsFigRot{figure}{Rotated schematic diagram of geometry.}{label2}
+
+
+\section{Results}
+The results of using the \LaTeX template is a great looking paper.
+In Figures \ref{fig:label1} and \ref{fig:label2} it can be seen how figures are easily included.
+In Table \ref{tab:label} it is seen how we can include a table.
+The table is constructed in the file table.tex, where also the table caption and label are defined.
+
+
+\newpage
+\InsTab{Table}
+
+\section{Conclusion}
+The conclusions are:
+\begin{enumerate}
+  \item Trondheim is a nice city.
+  \item CFD is great fun, and useful too.
+\end{enumerate}
+
+
+\section{CREDIT AUTHOR STATEMENT}
+% Please describe here individual contribution of group members on this assignment covering from problem definition to paper submission. Below are example of means for description.
+
+Student 1: problem analysis, coding, paper writing (Introduction, Method).\\
+Student 2: problem analysis (boundary conditions), running simulations (grid sensitivity study), writing (Results).
+
+
+%% %---------------------------
+%% %BIBLIOGRAPHY
+%% %---------------------------
+%The bibliography is created using BiBTeX
+\bibliographystyle{CFD2017}
+\bibliography{References}
+
+
+\newpage
+\section{Appendix A}
+Give any additional information here.
+
+\end{document} 
