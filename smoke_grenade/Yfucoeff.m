@@ -26,8 +26,10 @@ for I = Istart:Iend
         AREAs = x_u(i+1) - x_u(i);
         AREAn = AREAs;
 
-        Fw = F_u(i,J)*AREAw;   Fe = F_u(i+1,J)*AREAe;
-        Fs = F_v(I,j)*AREAs;   Fn = F_v(I,j+1)*AREAn;
+        % Unburnt fuel is SOLID -> stationary: no convection by the gas flow
+        % (this keeps the gas venting from disrupting the conduction front).
+        Fw = 0.;   Fe = 0.;
+        Fs = 0.;   Fn = 0.;
 
         % diffusion (harmonic mean of mu at the faces)
         Dw = ((mu(I-1,J)*mu(I,J))/(mu(I-1,J)*(x(I) - x_u(i)) ...

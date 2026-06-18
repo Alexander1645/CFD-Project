@@ -9,12 +9,12 @@ function [] = init()
 % See docs/design-decisions.md.
 
 % constants
-global NPI NPJ LARGE U_IN XMAX YMAX TAMB SMALL
+global NPI NPJ LARGE U_IN XMAX YMAX TAMB SMALL R_GAS P_ATM relax_rho
 % variables
 global x x_u y y_v u v pc p T rho mu mut mueff Gamma Cp k eps delta E E2 yplus yplus1 ...
     yplus2 uplus tw b SP Su d_u d_v omega SMAX SAVG m_in m_out relax_u relax_v ...
     relax_pc relax_T aP aE aW aN aS F_u F_v u_old v_old pc_old T_old k_old ...
-    eps_old dudx dudy dvdx dvdy Yfu YK2 Yfu_old YK2_old Rk
+    eps_old dudx dudy dvdx dvdy Yfu YK2 Yfu_old YK2_old Rk rho_old T_case
 
 % begin: memalloc()========================================================
 x   = zeros(1,NPI+2);   x_u = zeros(1,NPI+2);
@@ -34,6 +34,7 @@ uplus = zeros(NPI+2,NPJ+2); tw = zeros(NPI+2,NPJ+2);
 Yfu   = zeros(NPI+2,NPJ+2);  YK2   = zeros(NPI+2,NPJ+2);
 Yfu_old = zeros(NPI+2,NPJ+2);YK2_old = zeros(NPI+2,NPJ+2);
 Rk    = zeros(NPI+2,NPJ+2);
+rho_old = zeros(NPI+2,NPJ+2);
 
 u_old = zeros(NPI+2,NPJ+2);  v_old = zeros(NPI+2,NPJ+2);
 pc_old= zeros(NPI+2,NPJ+2);  T_old = zeros(NPI+2,NPJ+2);
@@ -77,7 +78,7 @@ u(:,:)   = 0.;
 v(:,:)   = 0.;
 p(:,:)   = 0.;
 T(:,:)   = TAMB;       % ambient initial temperature [K]
-rho(:,:) = 1.0;        % gas density (incompressible, constant) [kg/m3]
+rho(:,:) = P_ATM/(R_GAS*TAMB);   % ideal-gas density at ambient [kg/m3] (~1.18)
 mu(:,:)  = 2.E-5;      % molecular viscosity [Pa s]
 Cp(:,:)  = 1200.;      % heat capacity of combustion gases [J/(kg K)]
 Gamma    = 0.05./Cp;   % thermal conductivity / Cp  (~0.05 W/m/K hot gas)
@@ -102,6 +103,10 @@ Rk(:,:)   = 0.0;
 u_old = u;  v_old = v;  pc_old = pc;  T_old = T;
 eps_old = eps;  k_old = k;
 Yfu_old = Yfu;  YK2_old = YK2;
+rho_old = rho;
+
+% casing (wall) temperature - finite thermal mass, starts at ambient
+T_case = TAMB;
 
 % relaxation factors
 relax_u  = 0.8;

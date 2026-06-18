@@ -5,7 +5,7 @@ function [] = pccoeff()
 global NPI NPJ
 % variables
 global x_u y_v pc rho SP Su F_u F_v d_u d_v Istart Iend Jstart Jend ...
-    b aE aW aN aS aP SMAX SAVG Rk Yfu EXPANSION
+    b aE aW aN aS aP SMAX SAVG rho_old Dt
 
 Istart = 2;
 Iend = NPI+1;
@@ -31,12 +31,18 @@ for I = Istart:Iend
         % The constant b' in eq. 6.32
         b(I,J) = F_u(i,J)*AREAw - F_u(i+1,J)*AREAe + F_v(I,j)*AREAs - F_v(I,j+1)*AREAn;
         
-        % Gas-generation mass source (v2): solid -> gas adds mass to the cell
-        % at rate omega = Rk*rho*Yfu [kg/m3/s], integrated over the cell
-        % volume. This surplus mass must flow out of the vent, which is what
-        % drives the escaping-gas flow. See docs/design-decisions.md (v2).
+        % Transient compressible continuity (v3): net mass flux in must equal
+        % the rate of mass accumulation from the density change. Continuity
+        %   (rho-rho_old)/Dt*Vol + (Fe-Fw+Fn-Fs) = 0
+        % so the source added to the imbalance b' is (rho_old-rho)*Vol/Dt.
+        % When a cell heats, rho drops -> source>0 -> the pressure field pushes
+        % the expanding gas out the vent. This IS the thermal-expansion venting
+        % (it replaces the old constant-density mass-source hack). See density.m.
+        % Thermal-expansion mass source (stable). The chamber pressure / orifice
+        % venting is handled by the robust 0-D model in run_grenade (the
+        % solid-density source here made the 2-D venting supersonic -> unstable).
         SP(I,J) = 0.;
-        Su(I,J) = EXPANSION*Rk(I,J)*rho(I,J)*Yfu(I,J)*AREAe*AREAn;
+        Su(I,J) = (rho_old(I,J) - rho(I,J))*AREAe*AREAn/Dt;
 
         b(I,J) = b(I,J) + Su(I,J);
         
@@ -50,7 +56,7 @@ for I = Istart:Iend
         aS(I,J) = 0.5*(rho(I,J-1) + rho(I,J))*d_v(I,j)*AREAs;
         
         aP(I,J) = aE(I,J) + aW(I,J) + aN(I,J) + aS(I,J) - SP(I,J);
-        
+
         pc(I,J) = 0.;
         
         % note: At the points nearest the boundaries, some coefficients are
