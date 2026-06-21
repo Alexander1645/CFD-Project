@@ -10,7 +10,7 @@ function [] = YK2coeff()
 global NPI NPJ Dt
 % variables
 global x x_u y y_v YK2 Yfu mu SP Su F_u F_v relax_T YK2_old rho Istart Iend ...
-    Jstart Jend b aE aW aN aS aP Rk yK2
+    Jstart Jend b aE aW aN aS aP wburn yK2
 
 Istart = 2; Iend = NPI+1;
 Jstart = 2; Jend = NPJ+1;
@@ -38,9 +38,11 @@ for I = Istart:Iend
         Dn = ((mu(I,J)*mu(I,J+1))/(mu(I,J)*(y(J+1) - y_v(j+1)) ...
             + mu(I,J+1)*(y_v(j+1) - y(J))))*AREAn;
 
-        % Production source (explicit): +yK2*Rk*rho*Yfu*Volume
+        % Production source (explicit): K2CO3 made = yK2 * (charge consumed).
+        % Charge consumed per second = wburn*rho (wburn from the rate-anchored
+        % front in reaction.m), so the source is +yK2*wburn*rho*Volume.
         SP(I,J) = 0.;
-        Su(I,J) = yK2 * Rk(I,J) * rho(I,J) * Yfu(I,J) * AREAe * AREAn;
+        Su(I,J) = yK2 * wburn(I,J) * rho(I,J) * AREAe * AREAn;
 
         aW(I,J) = max([ Fw, Dw + Fw/2, 0.]);
         aE(I,J) = max([-Fe, De - Fe/2, 0.]);

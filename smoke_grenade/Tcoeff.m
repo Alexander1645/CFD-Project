@@ -2,10 +2,10 @@ function [] = Tcoeff()
 % Purpose: To calculate the coefficients for the T equation.
 
 % constants
-global NPI NPJ LARGE Dt TAMB
+global NPI NPJ LARGE Dt TAMB rho_solid_th
 % variables
 global x x_u y y_v T Gamma SP Su F_u F_v relax_T T_old rho Istart Iend ...
-    Jstart Jend b aE aW aN aS aP Rk Yfu dTad
+    Jstart Jend b aE aW aN aS aP wburn Yfu dTad
 
 Istart = 2;
 Iend = NPI+1;
@@ -25,11 +25,24 @@ for I = Istart:Iend
         AREAn = AREAs;
         
         % The convective mass flux defined in eq. 5.8a
-        % note:  F = rho*u but Fw = (rho*u)w = rho*u*AREAw per definition.    
-        Fw = F_u(i,J)*AREAw;
-        Fe = F_u(i+1,J)*AREAe;
-        Fs = F_v(I,j)*AREAs;
-        Fn = F_v(I,j+1)*AREAn;
+        % note:  F = rho*u but Fw = (rho*u)w = rho*u*AREAw per definition.
+        % GAS-FRACTION WEIGHTING: heat is convected only by actually-flowing
+        % PRODUCT GAS, not through the stationary unburnt solid charge. Each face
+        % flux is scaled by the face gas fraction (1-Yfu): solid-fuel cells move
+        % heat by CONDUCTION only, so the front advances into the charge as a
+        % self-sustaining conduction wave, while burnt gas convects and vents
+        % normally. Without this the gas-generation flow (which exits the west
+        % vent, next to the igniter) strips heat off the front and the flame
+        % convectively extinguishes - the documented gas-phase-flame limitation.
+        % This mirrors the solid (no-convection) treatment already used for Yfu.
+        fgw = 1. - 0.5*(Yfu(I-1,J) + Yfu(I,J));     % gas fraction, west face
+        fge = 1. - 0.5*(Yfu(I,J)   + Yfu(I+1,J));   % east face
+        fgs = 1. - 0.5*(Yfu(I,J-1) + Yfu(I,J));     % south face
+        fgn = 1. - 0.5*(Yfu(I,J)   + Yfu(I,J+1));   % north face
+        Fw = F_u(i,J)*AREAw*fgw;
+        Fe = F_u(i+1,J)*AREAe*fge;
+        Fs = F_v(I,j)*AREAs*fgs;
+        Fn = F_v(I,j+1)*AREAn*fgn;
         
         % The transport by diffusion defined in eq. 5.8b
         % note: D = mu/Dx but Dw = (mu/Dx)*AREAw per definition
@@ -43,24 +56,31 @@ for I = Istart:Iend
         Dn = ((Gamma(I,J)*Gamma(I,J+1))/(Gamma(I,J)*(y(J+1) - y_v(j+1)) ...
             + Gamma(I,J+1)*(y_v(j+1) - y(J))))*AREAn;
         
-        % Combustion heat release (energy-conserving form): each unit of fuel
-        % burned releases a fixed enthalpy Q = Cp*dTad, so the source is
-        %   q'''/Cp = omega*dTad = Rk*rho*Yfu*dTad   [K*kg/m3/s]
-        % integrated over the cell volume. Burning all the fuel in a cell
-        % raises it by dTad (-> adiabatic flame temperature Tad = TAMB+dTad),
-        % which gives realistic temperatures for the 891 C ceiling analysis.
-        % (A relaxation-toward-Tad form was tried but under-delivered heat
-        % when fuel burned out quickly. See docs/design-decisions.md.)
-        % The reaction-rate cap in reaction.m (0.5/Dt) keeps this stable.
+        % Combustion heat release (energy-conserving form): the charge consumed
+        % per second is wburn (fraction/s, from the rate-anchored front), and
+        % each unit released enthalpy Q = Cp*dTad, so the source is
+        %   q'''/Cp = wburn*rho_th*dTad   [K*kg/m3/s]
+        % integrated over the cell volume. Consuming a whole cell raises it by
+        % dTad (-> adiabatic flame temperature Tad = TAMB+dTad).
+        %
+        % SOLID THERMAL MASS: rho_th is the thermal density of the cell - solid
+        % charge (rho_solid_th, literal KNSu) while unburnt, product gas once
+        % burnt, blended by Yfu. It multiplies BOTH the storage term (aPold) and
+        % the heat-release source, so the peak temperature is unchanged (rho_th
+        % cancels -> still dTad) but the unburnt charge has the solid's large
+        % thermal inertia, so it stays cold until the front (set by wburn, NOT by
+        % conduction) arrives. rho_th appears ONLY in the energy eq - the flow
+        % uses the gas density, so nothing diverges.
+        rho_th  = Yfu(I,J)*rho_solid_th + (1.0 - Yfu(I,J))*rho(I,J);   % thermal density
         SP(I,J) = 0.;
-        Su(I,J) = Rk(I,J)*rho(I,J)*Yfu(I,J)*dTad*AREAe*AREAn;
-        
+        Su(I,J) = wburn(I,J)*rho_th*dTad*AREAe*AREAn;
+
         % The coefficients (hybrid differencing scheme)
         aW(I,j) = max([ Fw, Dw + Fw/2, 0.]);
         aE(I,j) = max([-Fe, De - Fe/2, 0.]);
         aS(I,j) = max([ Fs, Ds + Fs/2, 0.]);
         aN(I,j) = max([-Fn, Dn - Fn/2, 0.]);
-        aPold   = rho(I,J)*AREAe*AREAn/Dt;
+        aPold   = rho_th*AREAe*AREAn/Dt;
         
 %         if I > ceil(11*(NPI+1)/200) && I < ceil(18*(NPI+1)/200) && ...
 %                 J > ceil(2*(NPJ+1)/5) && J < ceil(3*(NPJ+1)/5)
