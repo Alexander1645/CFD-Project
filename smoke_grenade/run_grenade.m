@@ -17,15 +17,15 @@ if nargin < 2, doPlots = true; end
 if nargin < 3, doGif   = true; end
 
 %% ---- global declarations -------------------------------------------------
-global x x_u y y_v u v pc p T rho rho_old mu Gamma Cp b SMAX SAVG aP aE aW aN aS eps k ...
+global x x_u y y_v u v pc p T rho old mu Gamma Cp b SMAX SAVG aP aE aW aN aS eps k ...
     u_old v_old pc_old T_old Dt eps_old k_old uplus yplus yplus1 yplus2 ...
     Yfu YK2 Yfu_old YK2_old Rk mut mueff T_case P_chamber u_vent_orifice
 global NPI NPJ XMAX YMAX LARGE U_IN SMALL Cmu sigmak sigmaeps C1eps C2eps ...
-    kappa ERough Ti TAMB A_arr Ea_arr Ru yK2 dTad Jvent1 Jvent2 P_ATM R_GAS relax_rho h_wall rho_solid rho_solid_th f_gas n_gas ...
-    wburn T_ign a_burn n_burn
+    kappa ERough Ti TAMB A_arr Ea_arr Ru yK2 dTad Jvent1 Jvent2 P_ATM R_GAS relax_rho h_wall rho_solid rho_solid_th rho_prod_th f_gas n_gas ...
+    wburn T_ign a_burn n_burn Cdarcy grav rho_ref Sgen_smear Sgen_carry tig_cell TIME_NOW
 
 %% ---- numerical / geometry parameters -------------------------------------
-NPI = 40;  NPJ = 24;  XMAX = 0.08;  YMAX = 0.05;
+NPI = 73;  NPJ = 32;  XMAX = 0.146;  YMAX = 0.064;   % canister 146x64 mm, ~2 mm cells
 MAX_ITER = 50;
 U_ITER=1; V_ITER=1; PC_ITER=30; T_ITER=1; YFU_ITER=1; YK2_ITER=1;
 SMAXneeded = 1E-4;  SAVGneeded = 1E-5;
@@ -38,7 +38,7 @@ Cmu=0.09; sigmak=1.; sigmaeps=1.3; C1eps=1.44; C2eps=1.92; kappa=0.4187; ERough=
 % Interior cells are J = 2..NPJ+1, so the mid-plane index is Jmid = (NPJ+3)/2
 % (= 13.5 for NPJ=24). An EVEN vent width straddles it exactly.
 Jmid   = (NPJ+3)/2;                          % mid-plane (half-integer for even NPJ)
-nvent  = max(2, 2*round(0.125*NPJ));         % even count, ~25% of height (=6 for NPJ=24)
+nvent  = 2;                                  % realistic throat: 2 cells (~4 mm), not 25% of wall
 Jvent1 = round(Jmid - (nvent-1)/2);          % 11  (symmetric about Jmid)
 Jvent2 = round(Jmid + (nvent-1)/2);          % 16
 Jcen   = round(Jmid);                        % kept for any legacy reference
@@ -55,6 +55,9 @@ A_arr = 5.0e6;  Ea_arr = 8.0e4;
 % and the metric would collapse to "total K2CO3". A modest value keeps it
 % temperature-sensitive (cool/rich gas condenses, hot/stoichiometric stays vapour).
 T_SMOKE = 891.0 + 273.15;   % K2CO3 melting point [K]
+T_VAP   = 1600.0 + 273.15;  % K2CO3 vaporisation/decomposition point [K] (~1600 C).
+                            % Below it the K2CO3 is condensed (smoke); above it is vapour.
+                            % Tunable - set to the melting point if you want solid-only smoke.
 Cp_air  = 1005.;            % ambient air heat capacity [J/kg/K]
 ENTRAIN = 0.5;              % air mass entrained per unit vent-gas mass (modeling choice)
 
@@ -87,6 +90,26 @@ relax_rho = 0.05;     % density under-relaxation for the gas-phase flow (0.15
                       % pressure buildup is handled by the lumped low-Mach closure
                       % (block 1b), which is unconditionally stable.
 
+% DARCY (porous) drag constant [1/s]: makes the UNBURNT SOLID charge impermeable
+% to the gas flow. A momentum sink S = -Cdarcy*Yfu*u is added to the u/v equations
+% (ucoeff/vcoeff), so velocity is driven to ~0 where the cell is solid (Yfu->1)
+% and is untouched where burned (Yfu->0). This confines the flow to the burned
+% region and removes the spurious arrows + pressure gradient that otherwise appear
+% in the still-solid charge. The blocking ratio over the transient term is
+% ~Cdarcy*Dt (here ~1e3), enough to cut the in-solid velocity to <0.1%. Increase
+% it if the unburnt zone still shows flow; it only sharpens the block.
+Cdarcy = 1.0e6;
+
+% BUOYANCY: gravity body force in the v (vertical) momentum equation, so hot
+% light combustion gas rises and cool gas sinks (natural convection). Added as a
+% Boussinesq-style variable-density source -(rho - rho_ref)*grav in vcoeff.m.
+% rho_ref is the ambient gas density. NOTE: this breaks the up/down symmetry of
+% the flow (hot gas now rises), so the field is no longer mirror-symmetric about
+% the mid-plane - that is physical. If the flow becomes unstable, lower Dt or
+% relax_v. Set grav = 0 to recover the previous no-buoyancy behaviour.
+grav    = 9.81;                       % gravitational acceleration [m/s^2]
+rho_ref = P_ATM/(R_GAS*TAMB);         % ambient reference density [kg/m^3] (~1.18)
+
 % Chamber-pressure model: gas is generated at the SOLID density and vented
 % through an orifice; if generation outpaces venting the chamber pressurises.
 rho_solid = 1800.;    % TRUE solid propellant density [kg/m3] (KNSu) - used for the
@@ -110,6 +133,15 @@ rho_solid = 1800.;    % TRUE solid propellant density [kg/m3] (KNSu) - used for 
 % cold until the front arrives, which is physically correct. These enter ONLY
 % the energy equation - the flow keeps the gas density, so nothing diverges.
 rho_solid_th = 1800.; % thermal density of the unburnt charge [kg/m3] (literal KNSu)
+% PRODUCT thermal density [kg/m3]: effective thermal inertia of the BURNT cell
+% (hot gas laden with condensed K2CO3/soot), used in the energy eq only. The old
+% code let this collapse to the 0.2-1 kg/m3 free-gas value, so a freshly-burnt
+% cell had ~no heat capacity and conduction into the cold solid drained it within
+% ~10 ms (front transit per cell is ~0.5 s) -> the products went cold right behind
+% the flame. A substantial product inertia (condensed phase holds heat) keeps the
+% burnt zone near Tad, as a confined burn physically does. Peak T is unchanged
+% (rho_th cancels between source and storage); this only sets heat RETENTION.
+rho_prod_th  = 100.;  % burnt-product thermal density [kg/m3] (condensed-laden hot products)
 lambda_solid = 0.30;  % solid-charge conductivity [W/m/K] (KNSu ~0.2-0.5)
 Cd        = 0.6;      % orifice discharge coefficient [-]
 relax_P   = 0.2;      % chamber-pressure under-relaxation (lower if pressure oscillates)
@@ -134,16 +166,22 @@ A_burn = YMAX;        % burning surface area (front height, per unit depth) [m]
 % So the buildup is qualitatively right but quantitatively high until the burn
 % rate is calibrated (Foltran). Incompressible orifice assumed (valid for
 % modest overpressure; under-vents once dP approaches ~1 atm / choked flow).
-% Wall heat loss by NATURAL CONVECTION (still ambient air, no wind). The
-% convection coefficients are computed ANALYTICALLY from temperature each step
-% (h = 1.42*(dT/Lc)^0.25, simplified vertical-surface air correlation), so they
+% Wall heat loss by NATURAL CONVECTION + RADIATION (still ambient air, no wind).
+% The convection part is computed ANALYTICALLY from temperature each step
+% (h = 1.42*(dT/Lc)^0.25, simplified vertical-surface air correlation) and a
+% linearised radiative coefficient is ADDED (dominant inside at flame T), so they
 % are NOT guessed and they vary in time with the casing temperature:
 %   h_wall : internal, gas -> casing   (dT = T_gas - T_case)
 %   h_out  : external, casing -> ambient (dT = T_case - TAMB)  <- the no-wind term
 % Casing has finite thermal mass (thin sheet steel) so it heats up and the
 % cooling self-limits.
-Lc        = 0.06;     % casing characteristic length [m]
-t_wall    = 5.0e-4;   % casing wall thickness [m] (thin sheet steel)
+Lc        = YMAX;     % casing characteristic length [m] (tube height)
+sigma_sb  = 5.67e-8;  % Stefan-Boltzmann constant [W/m2/K4]
+eps_rad   = 0.8;      % effective emissivity: optically-thick K2CO3/soot smoke inside,
+                      % oxidised steel outside (~0.8). RADIATION dominates the internal
+                      % wall loss at flame temperature (q_rad ~ 30x q_conv at 1700 K),
+                      % so omitting it left the wall cooling ~30x too weak.
+t_wall    = 1.0e-3;   % casing wall thickness [m] (1 mm)
 rho_steel = 7850.;    % steel density [kg/m3]
 Cp_steel  = 490.;     % steel heat capacity [J/kg/K]
 Lwall     = YMAX + 2*XMAX;                 % cooled wall length (west+top+bottom) [m]
@@ -174,6 +212,7 @@ giffile = fullfile(resdir,'evolution.gif');   % T + pressure + velocity over tim
 %% ---- chamber-pressure state (init at ambient) ---------------------------
 P_chamber      = P_ATM;
 u_vent_orifice = 0.;
+Sgen_smear     = 0.;   Sgen_carry = 0.;   % gas-source split (set each step in block 1b)
 M_gas          = (P_ATM/(R_GAS*TAMB)) * (XMAX*YMAX);   % initial gas mass [kg/m depth]
 M_solid        = rho_solid * (XMAX*YMAX);              % total solid to burn [kg/m depth]
 A_vent         = (Jvent2 - Jvent1 + 1)*(YMAX/NPJ);     % vent area [m, per depth]
@@ -189,9 +228,12 @@ hist_uexit=zeros(nsteps,1);  % mean 2-D gas exit velocity at the vent (+ = outfl
 % K2CO3 yield histories (as MASS FRACTION of the original charge):
 hist_K2frac=zeros(nsteps,1); % TOTAL K2CO3 produced so far / charge mass  [-]
 hist_K2cold=zeros(nsteps,1); % K2CO3 currently BELOW 891 C (condensed smoke) / charge mass [-]
+hist_K2vap_cum =zeros(nsteps,1); % cumulative K2CO3 below the vaporisation point [kg] (graph 1)
+hist_K2vent_inst=zeros(nsteps,1);% K2CO3 escaping the vent THIS step, any T [kg] (graph 2)
 cellVol  = (XMAX/NPI)*(YMAX/NPJ);
 Dy       = YMAX/NPJ;
 smoke_vent = 0.;          % cumulative vented K2CO3 that condenses (smoke) [kg/m depth]
+k2vap_vent_cum = 0.;      % cumulative K2CO3 vented while below T_VAP [kg] (for graph 1)
 t_burn   = NaN;           % time when ~fully burned (meanYfu<0.05)
 frameEvery = max(1, round(nsteps/50));   % ~50 animation/live-plot frames over the whole run
 if doGif, figAnim = figure('Name',sprintf('burn xKN=%.2f',xKN)); end
@@ -217,6 +259,7 @@ ARROW_LEN = 1.6*min(XMAX/NPI, YMAX/NPJ);         % longest arrow in data units (
 %% ---- time loop -----------------------------------------------------------
 for time = Dt:Dt:TOTAL_TIME
     istep = istep + 1;  iter = 0;
+    TIME_NOW = time;
 
     % store previous-time-level fields ONCE per step (backward-Euler transient).
     % rho_old in particular must be the previous step's density so the
@@ -225,8 +268,13 @@ for time = Dt:Dt:TOTAL_TIME
 
     % natural-convection coefficients (analytical, no-wind; vary with T_case)
     Twg    = (mean(T(2,2:NPJ+1)) + mean(T(2:NPI+1,2)) + mean(T(2:NPI+1,NPJ+1)))/3;
-    h_wall = max(1.42*(max(Twg   - T_case,0)/Lc)^0.25, 2.);   % gas -> casing
-    h_out  = max(1.42*(max(T_case - TAMB ,0)/Lc)^0.25, 2.);   % casing -> ambient (no wind)
+    % Each coefficient = natural convection + linearised radiation
+    % h_rad = eps*sigma*(Ta^2+Tb^2)*(Ta+Tb). Radiation dominates internally at
+    % flame temperature; both modes feed the casing energy balance below.
+    h_wall = max(1.42*(max(Twg   - T_case,0)/Lc)^0.25, 2.) ...   % gas -> casing (convection)
+           + eps_rad*sigma_sb*(Twg^2    + T_case^2)*(Twg    + T_case);  % + radiation
+    h_out  = max(1.42*(max(T_case - TAMB ,0)/Lc)^0.25, 2.) ...   % casing -> ambient (no wind)
+           + eps_rad*sigma_sb*(T_case^2 + TAMB^2  )*(T_case + TAMB);    % + radiation
 
     if time < t_ign, T(Iig,Jig) = Tig; end   % brief igniter; then natural propagation
 
@@ -269,17 +317,27 @@ for time = Dt:Dt:TOTAL_TIME
     % See pressure_model.md.
     C_T       = sum(sum(cellVol ./ max(T(2:NPI+1,2:NPJ+1), SMALL))) / R_GAS;       % [kg/Pa/m]
     Sgen_mass = f_gas * rho_solid * sum(sum(wburn(2:NPI+1,2:NPJ+1))) * cellVol;    % [kg/s/m]
+    % AUTHORITATIVE 0-D pressure closure carries the FULL solid-density generation.
+    % The old "two-way split" smeared most generation onto the 2-D field and let
+    % Sgen_remain (the only part that pressurises) collapse to 0 as soon as the
+    % burnt region outgrew the thin front -> chamber never built pressure. The 2-D
+    % field cannot physically carry that flux (it moves at ~0.05 m/s), so the carry
+    % was fictitious. Zero it: the field keeps only the gentle thermal-expansion
+    % source (stable), and ALL real gas generation pressurises P_chamber.
+    Sgen_smear  = 0.;                                   % no fictitious 2-D continuity source
+    Sgen_carry  = 0.;                                   % no fictitious 2-D vent flux
+    Sgen_remain = Sgen_mass;                            % full generation -> chamber pressure
     Tvent_n   = mean(T(2,Jvent1:Jvent2));
     P0 = P_chamber;
     for itP = 1:30
         rho_v     = P0/(R_GAS*Tvent_n);
         mdot_vent = Cd*A_vent*sqrt(2.*rho_v*max(P0-P_ATM,0.));
-        M_gas_new = M_gas + Dt*(Sgen_mass - mdot_vent);          % chamber gas mass at n+1
+        M_gas_new = M_gas + Dt*(Sgen_remain - mdot_vent);        % chamber gas mass at n+1
         P0        = P0 + relax_P*(M_gas_new/C_T - P0);           % under-relaxed fixed point
     end
     rho_v     = P0/(R_GAS*Tvent_n);
     mdot_vent = Cd*A_vent*sqrt(2.*rho_v*max(P0-P_ATM,0.));        % converged vent flux
-    M_gas     = max(M_gas + Dt*(Sgen_mass - mdot_vent), 1e-12);  % commit conserved gas mass
+    M_gas     = max(M_gas + Dt*(Sgen_remain - mdot_vent), 1e-12);% commit conserved gas mass
     P_chamber = max(M_gas/C_T, 0.5*P_ATM);                       % thermodynamic pressure
     M_solid   = max(M_solid - Sgen_mass*Dt, 0.);                 % deplete the charge (gas part)
 
@@ -396,6 +454,22 @@ for time = Dt:Dt:TOTAL_TIME
     end
     hist_smoke(istep) = cond_in + smoke_vent;        % total condensed (smoke)
 
+    % --- the two LIVE graphs (replacing the old mass-fraction plots) ---------
+    % (1) CUMULATIVE K2CO3 below the vaporisation point [kg]: the condensed
+    %     inventory still in the box (cells below T_VAP) + everything vented while
+    %     below T_VAP. This is the total usable (condensed) smoke produced so far.
+    % (2) INSTANTANEOUS K2CO3 leaving the vent THIS step, at ANY temperature [kg].
+    k2_vent_step = 0.;
+    for J = Jvent1:Jvent2
+        uout  = max(-u(2,J),0.);                      % outflow speed (u<0 = leaving west)
+        dm_k2 = rho(2,J)*uout*Dy*YK2(2,J)*Dt;          % K2CO3 mass crossing this face [kg]
+        k2_vent_step = k2_vent_step + dm_k2;
+        if hist_Tvent(istep) < T_VAP, k2vap_vent_cum = k2vap_vent_cum + dm_k2; end
+    end
+    k2_in_belowvap = sum(sum( (Tin < T_VAP) .* rho(2:NPI+1,2:NPJ+1) .* YK2(2:NPI+1,2:NPJ+1) ))*cellVol;
+    hist_K2vap_cum(istep)   = k2_in_belowvap + k2vap_vent_cum;   % cumulative below-vap [kg]
+    hist_K2vent_inst(istep) = k2_vent_step;                       % vented this moment [kg]
+
     meanYfu = mean(mean(Yfu(2:NPI+1,2:NPJ+1)));
     if isnan(t_burn) && M_solid <= 0, t_burn = time; end     % solid fully consumed (real burn time)
     if istep==1
@@ -438,27 +512,26 @@ for time = Dt:Dt:TOTAL_TIME
         % (Absolute pressure = this tiny field + the ~uniform chamber pressure.)
         pp = p;  pmean = mean(mean(p(2:NPI+1,2:NPJ+1)));
         pp(1,:)=pp(2,:); pp(NPI+2,:)=pp(NPI+1,:); pp(:,1)=pp(:,2); pp(:,NPJ+2)=pp(:,NPJ+1);
-        % log-scaled velocity arrows: direction kept, length = normalised
-        % log10(1+speed/V_REF) so weak far-field flow is visible next to the fast
-        % vent jet. Fixed scaling (constants above) => arrow lengths are
-        % comparable BETWEEN frames, not re-autoscaled each frame.
+        % LINEAR velocity arrows: length proportional to speed, scaled so the
+        % fastest arrow in the frame = ARROW_LEN (re-scaled each frame). True
+        % relative magnitudes - slow cells get short arrows (may be invisible
+        % next to the fast vent flow); that is the honest linear picture.
         spg = hypot(ug,vg);
-        Lng = log10(1 + spg/V_REF) / V_LOGMAX;             % normalised 0..~1
-        uqg = ug ./ max(spg,SMALL) .* Lng * ARROW_LEN;
-        vqg = vg ./ max(spg,SMALL) .* Lng * ARROW_LEN;
-        subplot(3,1,1); contourf(x,y,T',20,'LineColor','none'); colormap(jet); colorbar;
+        scg = ARROW_LEN / max(spg(:) + SMALL);
+        uqg = ug * scg;
+        vqg = vg * scg;
+        axT = subplot(3,1,1); contourf(x,y,T',20,'LineColor','none'); colormap(jet); colorbar;
         clim(T_CLIM);                                       % FIXED temperature scale
         title(sprintf('Temperature [K]   t=%.3f s   (xKN=%.2f)',time,xKN)); axis equal tight; ylabel('y [m]');
-        % signed-log of the deviation: |dev| spans ~1000x over the run, so a
-        % linear scale washes out all but the ignition spike. sign*log10(1+|dev|/ref)
-        % keeps sign and shows structure at every magnitude; FIXED clim = stable colours.
+        % signed-log of the deviation: keeps sign and shows structure at every
+        % magnitude; FIXED clim = stable colours between frames.
         pds = sign(pp-pmean) .* log10(1 + abs(pp-pmean)/PDEV_REF);
-        subplot(3,1,2); contourf(x,y,pds',20,'LineColor','none'); colorbar;
+        axP = subplot(3,1,2); contourf(x,y,pds',20,'LineColor','none'); colorbar;
         clim([-PDS_MAX PDS_MAX]);                           % FIXED signed-log scale
         title(sprintf('Gauge pressure (signed log_{10}, ref %.0e Pa)   (chamber P = %.2f kPa)',PDEV_REF,P_chamber/1000)); axis equal tight; ylabel('y [m]');
-        subplot(3,1,3); quiver(x,y,uqg',vqg',0,'Color',[0 0 0.6]); axis equal tight;
+        axV = subplot(3,1,3); quiver(x,y,uqg',vqg',0,'Color',[0 0 0.6]); axis equal tight;
         xlim([0 XMAX]); ylim([0 YMAX]);
-        title('Velocity (log-scaled arrows; out the vent during burn, inward as it cools)'); xlabel('x [m]'); ylabel('y [m]');
+        title(sprintf('Velocity (linear arrows; peak %.2f m/s)',max(spg(:)))); xlabel('x [m]'); ylabel('y [m]');
         drawnow;
         % Render the frame from the FIGURE OBJECT (print -RGBImage), not the
         % screen. getframe() screen-scrapes, so it returns a blank frame whenever
@@ -553,21 +626,23 @@ if doPlots
     ugf = zeros(NPI+2,NPJ+2);  vgf = zeros(NPI+2,NPJ+2);
     ugf(2:NPI+1,:) = 0.5*(u(2:NPI+1,:) + u(3:NPI+2,:));
     vgf(:,2:NPJ+1) = 0.5*(v(:,2:NPJ+1) + v(:,3:NPJ+2));
-    spf  = hypot(ugf,vgf);                              % log-scaled arrows (as in the GIF)
-    Lnf  = log10(1 + spf/V_REF) / V_LOGMAX;
-    uqf  = ugf ./ max(spf,SMALL) .* Lnf * ARROW_LEN;
-    vqf  = vgf ./ max(spf,SMALL) .* Lnf * ARROW_LEN;
+    spf  = hypot(ugf,vgf);                              % LINEAR arrows (as in the GIF)
+    scf  = ARROW_LEN / max(spf(:) + SMALL);             % fastest arrow = ARROW_LEN
+    uqf  = ugf * scf;
+    vqf  = vgf * scf;
     subplot(4,1,1); contourf(x,y,T',20,'LineColor','none'); colormap(jet); colorbar; clim(T_CLIM);
     title(sprintf('Temperature [K]  (xKN=%.2f)',xKN)); ylabel('y [m]'); axis equal tight;
     subplot(4,1,2); contourf(x,y,YK2',20,'LineColor','none'); colorbar; clim([0 1]);
     title('K_2CO_3 mass fraction [-]'); ylabel('y [m]'); axis equal tight;
     ppf = p;  pmeanf = mean(mean(p(2:NPI+1,2:NPJ+1)));   % gauge pressure rel. to mean (flow-driving structure)
     ppf(1,:)=ppf(2,:); ppf(NPI+2,:)=ppf(NPI+1,:); ppf(:,1)=ppf(:,2); ppf(:,NPJ+2)=ppf(:,NPJ+1);
-    pdsf = sign(ppf-pmeanf) .* log10(1 + abs(ppf-pmeanf)/PDEV_REF);   % signed-log (as in the GIF)
-    subplot(4,1,3); contourf(x,y,pdsf',20,'LineColor','none'); colorbar; clim([-PDS_MAX PDS_MAX]);
-    title(sprintf('Gauge pressure (signed log_{10}, ref %.0e Pa)  (chamber P = %.2f kPa)',PDEV_REF,P_chamber/1000)); ylabel('y [m]'); axis equal tight;
+    pdevf = ppf - pmeanf;                               % LINEAR gauge deviation [Pa]
+    pmaxf = max(abs(pdevf(:)));
+    subplot(4,1,3); contourf(x,y,pdevf',20,'LineColor','none'); colorbar;
+    if pmaxf > 0, clim([-pmaxf pmaxf]); end             % symmetric, auto-scaled
+    title(sprintf('Gauge pressure [Pa]  (chamber P = %.2f kPa)',P_chamber/1000)); ylabel('y [m]'); axis equal tight;
     subplot(4,1,4); quiver(x,y,uqf',vqf',0,'Color',[0 0 0.6]); xlim([0 XMAX]); ylim([0 YMAX]);
-    title('Velocity (log-scaled arrows; end snapshot = post-burn inflow)'); xlabel('x [m]'); ylabel('y [m]'); axis equal tight;
+    title(sprintf('Velocity (linear arrows; peak %.2f m/s)',max(spf(:)))); xlabel('x [m]'); ylabel('y [m]'); axis equal tight;
     % exportgraphics renders from the figure object (not a screen grab), so the
     % saved PNG is never blank even if the window was behind others when saving.
     exportgraphics(gcf, fullfile(resdir,'fields.png'), 'Resolution',150);

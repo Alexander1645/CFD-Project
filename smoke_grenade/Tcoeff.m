@@ -2,7 +2,7 @@ function [] = Tcoeff()
 % Purpose: To calculate the coefficients for the T equation.
 
 % constants
-global NPI NPJ LARGE Dt TAMB rho_solid_th
+global NPI NPJ LARGE Dt TAMB rho_solid_th rho_prod_th
 % variables
 global x x_u y y_v T Gamma SP Su F_u F_v relax_T T_old rho Istart Iend ...
     Jstart Jend b aE aW aN aS aP wburn Yfu dTad
@@ -71,7 +71,10 @@ for I = Istart:Iend
         % thermal inertia, so it stays cold until the front (set by wburn, NOT by
         % conduction) arrives. rho_th appears ONLY in the energy eq - the flow
         % uses the gas density, so nothing diverges.
-        rho_th  = Yfu(I,J)*rho_solid_th + (1.0 - Yfu(I,J))*rho(I,J);   % thermal density
+        % thermal density: solid charge while unburnt, condensed-laden hot PRODUCT
+        % (rho_prod_th, NOT free gas) once burnt -> burnt cell keeps enough heat
+        % capacity to stay hot behind the front instead of conducting cold in ms.
+        rho_th  = Yfu(I,J)*rho_solid_th + (1.0 - Yfu(I,J))*rho_prod_th;
         SP(I,J) = 0.;
         Su(I,J) = wburn(I,J)*rho_th*dTad*AREAe*AREAn;
 
@@ -98,10 +101,9 @@ for I = Istart:Iend
         % term on the right side into the source term b(i,J)       
         aP(I,J) = aP(I,J)/relax_T;
         b(I,J)  = b(I,J) + (1.0 - relax_T)*aP(I,J)*T(I,J);
-        
+
         % now the TDMA algorithm can be called to solve the equation.
-        % This is done in the next step of the main program.        
+        % This is done in the next step of the main program.
     end
 end
 end
-

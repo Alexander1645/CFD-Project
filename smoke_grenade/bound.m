@@ -14,7 +14,7 @@ function [] = bound()
 % Species BCs: zero flux (zero gradient) at all walls and the vent.
 
 % constants
-global NPI NPJ XMAX YMAX Jvent1 Jvent2 SMALL TAMB Dt h_wall f_gas
+global NPI NPJ XMAX YMAX Jvent1 Jvent2 SMALL TAMB Dt h_wall f_gas Sgen_carry
 % variables
 global u v T Yfu YK2 rho rho_old T_case wburn
 
@@ -30,13 +30,17 @@ lambda = 0.05;                 % conductivity used in the wall-flux BC [W/m/K]
 % cannot carry (it NaNs locally), so the real discharge/pressure are taken from
 % the lumped low-Mach P_chamber closure in run_grenade.m (block 1b). This vent BC
 % only balances the gentle internal low-Mach flow. See pressure_model.md.
+% (1) thermal expansion/compression (local) + (2) the SMEARED combustion-gas
+% generation carried by the field this step (Sgen_carry, from run_grenade 1b -
+% the same total injected into pccoeff). Vent total = expansion + Sgen_carry, so
+% the 2-D continuity and this outflow BC stay mass-consistent.
 m_src = 0.;
 for I = 2:NPI+1
     for J = 2:NPJ+1
-        m_src = m_src + ((rho_old(I,J) - rho(I,J))/Dt ...
-                         + f_gas*wburn(I,J)*rho(I,J))*Vol;
+        m_src = m_src + ((rho_old(I,J) - rho(I,J))/Dt)*Vol;
     end
 end
+m_src = m_src + Sgen_carry;
 
 % --- velocities: no-slip on the solid walls -------------------------------
 u(2,1:NPJ+2)     = 0.;

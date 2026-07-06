@@ -14,7 +14,7 @@ global NPI NPJ LARGE U_IN XMAX YMAX TAMB SMALL R_GAS P_ATM relax_rho
 global x x_u y y_v u v pc p T rho mu mut mueff Gamma Cp k eps delta E E2 yplus yplus1 ...
     yplus2 uplus tw b SP Su d_u d_v omega SMAX SAVG m_in m_out relax_u relax_v ...
     relax_pc relax_T aP aE aW aN aS F_u F_v u_old v_old pc_old T_old k_old ...
-    eps_old dudx dudy dvdx dvdy Yfu YK2 Yfu_old YK2_old Rk wburn rho_old T_case
+    eps_old dudx dudy dvdx dvdy Yfu YK2 Yfu_old YK2_old Rk wburn rho_old T_case tig_cell
 
 % begin: memalloc()========================================================
 x   = zeros(1,NPI+2);   x_u = zeros(1,NPI+2);
@@ -35,6 +35,7 @@ Yfu   = zeros(NPI+2,NPJ+2);  YK2   = zeros(NPI+2,NPJ+2);
 Yfu_old = zeros(NPI+2,NPJ+2);YK2_old = zeros(NPI+2,NPJ+2);
 Rk    = zeros(NPI+2,NPJ+2);
 wburn = zeros(NPI+2,NPJ+2);   % rate-anchored consumption rate [1/s] (reaction.m)
+tig_cell = inf(NPI+2,NPJ+2);  % Eikonal ignition-arrival time [s] (reaction.m); inf = unburnt
 rho_old = zeros(NPI+2,NPJ+2);
 
 u_old = zeros(NPI+2,NPJ+2);  v_old = zeros(NPI+2,NPJ+2);

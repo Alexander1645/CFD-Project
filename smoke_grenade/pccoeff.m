@@ -5,7 +5,7 @@ function [] = pccoeff()
 global NPI NPJ
 % variables
 global x_u y_v pc rho SP Su F_u F_v d_u d_v Istart Iend Jstart Jend ...
-    b aE aW aN aS aP SMAX SAVG rho_old Dt wburn f_gas
+    b aE aW aN aS aP SMAX SAVG rho_old Dt wburn f_gas p Yfu Sgen_smear
 
 Istart = 2;
 Iend = NPI+1;
@@ -21,7 +21,21 @@ convect();
 for I = Istart:Iend
     i = I;
     for J = Jstart:Jend
-        j = J;      
+        j = J;
+        % --- UNBURNT SOLID = INACTIVE pressure cell -----------------------------
+        % Once the Darcy drag closes a solid cell's faces (d_u,d_v -> 0), its
+        % pressure-correction equation loses all neighbour coupling (aE..aS -> 0)
+        % and becomes singular (aP -> 0), so the gas pressure there floats to
+        % arbitrary tiny values - which the signed-log plot blows up into spurious
+        % red/blue blocks. There is no gas in the solid, so its gas pressure is
+        % undefined: mark the cell INACTIVE (pc = 0, p = 0, no source). This keeps
+        % the solver well-posed and leaves only the physical gas-region pressure.
+        % Cells reactivate automatically as the front burns them (Yfu -> 0).
+        if Yfu(I,J) > 0.5
+            aE(I,J)=0.; aW(I,J)=0.; aN(I,J)=0.; aS(I,J)=0.; aP(I,J)=1.;
+            b(I,J)=0.; pc(I,J)=0.; p(I,J)=0.;
+            continue
+        end
         % Geometrical parameters: Areas of the cell faces
         AREAw = y_v(j+1) - y_v(j); % = A(i,J) See fig. 6.2 or fig. 6.5
         AREAe = AREAw;
@@ -49,33 +63,36 @@ for I = Istart:Iend
         % carries the real solid-density generation safely; this 2-D source only
         % drives the gentle internal low-Mach circulation pattern. See pressure_model.md.
         SP(I,J) = 0.;
-        Sgen    = f_gas * wburn(I,J) * rho(I,J);                  % gas gen [kg/m3/s]
-        Su(I,J) = (rho_old(I,J) - rho(I,J))*AREAe*AREAn/Dt + Sgen*AREAe*AREAn;
+        % Continuity source = LOCAL thermal expansion/compression only, PLUS the
+        % uniformly-smeared gas generation Sgen_smear set by the driver (block 1b).
+        % Sgen_smear = 0 in the low-Mach closure, so the 2-D field carries NO stiff
+        % cell-local solid-density source (that caused the historical NaN); it stays
+        % stable and only shows the gentle internal circulation. See pressure_model.md.
+        Su(I,J) = (rho_old(I,J) - rho(I,J))*AREAe*AREAn/Dt + Sgen_smear/(NPI*NPJ);
 
         b(I,J) = b(I,J) + Su(I,J);
-        
+
         SMAX = max([SMAX,abs(b(I,J))]);
         SSUM = SSUM + abs(b(I,J));
-        
+
         % The coefficients
         aE(I,J) = 0.5*(rho(I,J) + rho(I+1,J))*d_u(i+1,J)*AREAe;
         aW(I,J) = 0.5*(rho(I-1,J) + rho(I,J))*d_u(i,J)*AREAw;
         aN(I,J) = 0.5*(rho(I,J) + rho(I,J+1))*d_v(I,j+1)*AREAn;
         aS(I,J) = 0.5*(rho(I,J-1) + rho(I,J))*d_v(I,j)*AREAs;
-        
+
         aP(I,J) = aE(I,J) + aW(I,J) + aN(I,J) + aS(I,J) - SP(I,J);
 
         pc(I,J) = 0.;
-        
+
         % note: At the points nearest the boundaries, some coefficients are
         % necessarily zero. For instance at I = 1 and J = 1, the coefficients
         % aS and aW are zero since they are on the outside of the calculation
         % domain. This is automatically satisfied through the initialisation
-        % where d_u(i,J) and d_v(I,j) are set to zero at these points.        
+        % where d_u(i,J) and d_v(I,j) are set to zero at these points.
     end
 end
 % Average error in mass balance is summed error divided by number of internal grid points
 SAVG = SSUM/((Iend - Istart)*(Jend - Jstart));
 
 end
-

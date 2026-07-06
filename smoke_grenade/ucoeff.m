@@ -5,7 +5,7 @@ function [] = ucoeff()
 global NPI NPJ Dt Cmu
 % variables
 global x x_u y y_v u p mu mueff SP Su F_u F_v d_u relax_u u_old rho Istart Iend ...
-    Jstart Jend b aE aW aN aS aP yplus uplus k dudx dvdx
+    Jstart Jend b aE aW aN aS aP yplus uplus k dudx dvdx Yfu Cdarcy
 
 Istart = 3;
 Iend = NPI+1;
@@ -51,7 +51,20 @@ for I = Istart:Iend
         else
             SP(i,J) = 0.;
         end
-        
+
+        % --- Darcy (porous) drag: make the UNBURNT SOLID charge impermeable -----
+        % The flow solver treats the whole box as gas; without this, venting flow
+        % blows through the still-solid charge (spurious arrows + a pressure
+        % gradient in the unburnt zone). Add a momentum sink S = -D*u with
+        % D = Cdarcy*Yfu_face, integrated over the u-cell volume (AREAw*AREAs), via
+        % SP (implicit -> unconditionally stable). u is driven to ~0 where the cell
+        % is solid (Yfu->1) and untouched where burned (Yfu->0). It also makes
+        % d_u->0 there, so pccoeff sees the solid faces as closed and no pressure
+        % gradient develops across the charge. u(i,J) sits on the west face of cell
+        % I, between cells (I-1,J) and (I,J).
+        Yfu_f = 0.5*(Yfu(I-1,J) + Yfu(I,J));            % solid fraction at the u-face
+        SP(i,J) = SP(i,J) - Cdarcy*Yfu_f*AREAw*AREAs;
+
         Su(i,J) = (mueff(I,J)*dudx(I,J) - mueff(I-1,J)*dudx(I-1,J)) / (x(I) - x(I-1)) + ...
             (mun*dvdx(i,j+1) - mus*dvdx(i,j)) / (y_v(j+1) - y_v(j)) - ...
             2./3. * (rho(I,J)*k(I,J) - rho(I-1,J)*k(I-1,J))/(x(I) - x(I-1));
@@ -79,21 +92,21 @@ for I = Istart:Iend
         % Calculation of d(i)(J) = d_u(i)(J) defined in eq. 6.23 for use in the
         % equation for pression correction (eq. 6.32). See subroutine pccoeff.
         d_u(i,J) = AREAw*relax_u/aP(i,J);
-        
+
         % Putting the integrated pressure gradient into the source term b(i)(J)
         % The reason is to get an equation on the generalised form
         % (eq. 7.7 ) to be solved by the TDMA algorithm.
-        % note: In reality b = a0p*fiP + Su = 0.       
+        % note: In reality b = a0p*fiP + Su = 0.
         b(i,J) = (p(I-1,J) - p(I,J))*AREAw + Su(I,J) + aPold*u_old(i,J);
-        
+
         % Introducing relaxation by eq. 6.36 . and putting also the last
-        % term on the right side into the source term b(i)(J)       
+        % term on the right side into the source term b(i)(J)
         aP(i,J) = aP(i,J)/relax_u;
         b(i,J)  = b(i,J) + (1.0 - relax_u)*aP(i,J)*u(i,J);
-        
+
         % now we have implemented eq. 6.36 in the form of eq. 7.7
         % and the TDMA algorithm can be called to solve it. This is done
-        % in the next step of the main program.       
+        % in the next step of the main program.
     end
 end
 end
