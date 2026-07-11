@@ -1,0 +1,13 @@
+== postproc_smoke: .
+quasi-steady window: t = 0.500..1.000 s (last 50%)
+Tvent_fw  [K]     :     1773.3 (qs mean)       1773.0 (final)
+pvent     [Pa]    :     1890.5 (qs mean)
+uvent     [m/s]   :      90.78 (qs mean)
+m_vent    [kg/s/m]:     0.2613 (qs mean)
+D dilution[kg/kg] :      0.840 (qs mean)  [air per kg vent gas to reach T_c]
+C_form    [g/m3]  :     131.35 (qs mean)  [smoke conc. at the T_c point]
+C_req     [g/m3]  :      0.261           [ln(1/0.02)/(alpha*L), L=5.0 m]
+margin C_form/C_req [-]:    503.7       [allowable further dilution]
+MK2_vented(end) [kg/m] :   0.2034
+A_screen  [m2 per m depth]:  156.0    [alpha*MK2/ln(1/T_req)]
+alpha = 3.0 m2/g (results scale linearly), T_c = 1164 K

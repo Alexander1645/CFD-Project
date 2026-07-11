@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" font-family="Segoe UI, Arial" font-size="14">
+<rect width="980" height="720" fill="#ffffff"/>
+<text x="20" y="28" font-size="19" font-weight="bold">Option B — advancing burning-surface model (one picture)</text>
+
+<!-- ===== Panel 1: domain ===== -->
+<text x="20" y="58" font-size="15" font-weight="bold">1. Domain at time t</text>
+<rect x="60" y="75" width="860" height="180" fill="none" stroke="#333" stroke-width="3"/>
+<!-- gas region -->
+<rect x="63" y="78" width="240" height="174" fill="#dbeeff"/>
+<!-- ghost column -->
+<rect x="303" y="78" width="40" height="174" fill="#ffb84d"/>
+<!-- solid -->
+<rect x="343" y="78" width="574" height="174" fill="#c9c9c9"/>
+<text x="120" y="160" fill="#1a5b9e" font-weight="bold">GAS cavity</text>
+<text x="120" y="180" fill="#1a5b9e">solved: u v p T Y</text>
+<text x="400" y="160" fill="#444" font-weight="bold">SOLID charge (blocked cells)</text>
+<text x="400" y="180" fill="#444">pinned: u=v=0, T=TAMB, Y=0, pc=0   (SP=-LARGE idiom)</text>
+<!-- vent -->
+<rect x="52" y="130" width="8" height="60" fill="#fff" stroke="#c00" stroke-width="2"/>
+<text x="18" y="122" fill="#c00" font-weight="bold">vent</text>
+<path d="M50 160 l-28 0" stroke="#c00" stroke-width="3" marker-end="url(#ar)"/>
+<text x="8" y="215" fill="#c00" font-size="12">u = -Cd*sqrt(2p/rho)</text>
+<text x="8" y="230" fill="#c00" font-size="12">bound.m L33-38</text>
+<!-- inlet arrows -->
+<g stroke="#e07000" stroke-width="3">
+<path d="M303 100 l-45 0" marker-end="url(#ar)"/>
+<path d="M303 165 l-45 0" marker-end="url(#ar)"/>
+<path d="M303 230 l-45 0" marker-end="url(#ar)"/>
+</g>
+<text x="310" y="70" fill="#e07000" font-weight="bold">ghost column Ifr = moving INLET</text>
+<text x="355" y="272" fill="#e07000" font-size="13">pinned T_flame + Y_in (Tcoeff/YK2coeff);  face u(Ifr,J) = -mdotpp/rho  (ucoeff L75-79)</text>
+<path d="M323 258 l40 0" stroke="#e07000" stroke-width="2" marker-end="url(#ar)"/>
+<text x="430" y="296" fill="#555" font-size="13">front moves east at r = a*P^n (front.m);  cell flips solid->gas = the "moving wall" volume growth</text>
+
+<!-- ===== Panel 2: one timestep ===== -->
+<text x="20" y="340" font-size="15" font-weight="bold">2. One time step (grenade06.m L104-204)</text>
+<g fill="#eef" stroke="#446">
+<rect x="30"  y="355" width="150" height="46" rx="6"/>
+<rect x="200" y="355" width="150" height="46" rx="6"/>
+<rect x="370" y="355" width="150" height="46" rx="6"/>
+<rect x="540" y="355" width="190" height="46" rx="6"/>
+<rect x="750" y="355" width="180" height="46" rx="6"/>
+</g>
+<text x="42"  y="374">store old fields</text><text x="42" y="392" font-size="12">u_old T_old rho_old (ONCE)</text>
+<text x="212" y="374">front(time)</text><text x="212" y="392" font-size="12">r(P) -> xf, mdotpp, flips</text>
+<text x="382" y="374">bound()</text><text x="382" y="392" font-size="12">vent + inlet + ghosts</text>
+<text x="552" y="374">SIMPLE loop (while)</text><text x="552" y="392" font-size="12">density u v pc velcorr T Y</text>
+<text x="762" y="374">diagnostics</text><text x="762" y="392" font-size="12">massErr pbar Tvent K2</text>
+<g stroke="#446" stroke-width="2" fill="none">
+<path d="M180 378 h20" marker-end="url(#ar)"/><path d="M350 378 h20" marker-end="url(#ar)"/>
+<path d="M520 378 h20" marker-end="url(#ar)"/><path d="M730 378 h20" marker-end="url(#ar)"/>
+</g>
+
+<!-- ===== Panel 3: feedback loop ===== -->
+<text x="20" y="445" font-size="15" font-weight="bold">3. The in-field feedback loop (why no 0-D side model is needed)</text>
+<g fill="#fff4e0" stroke="#b06000" stroke-width="2">
+<rect x="60"  y="470" width="200" height="52" rx="8"/>
+<rect x="380" y="470" width="220" height="52" rx="8"/>
+<rect x="700" y="470" width="220" height="52" rx="8"/>
+<rect x="380" y="590" width="220" height="52" rx="8"/>
+</g>
+<text x="80"  y="492" font-weight="bold">burn rate r = a*P^n</text><text x="80" y="510" font-size="12">front.m L34-40</text>
+<text x="400" y="492" font-weight="bold">inlet mass mdotpp</text><text x="400" y="510" font-size="12">= f_gas*rho_s*r  (ucoeff pin)</text>
+<text x="720" y="492" font-weight="bold">cavity pressurises</text><text x="720" y="510" font-size="12">pccoeff L60 + density.m (EOS)</text>
+<text x="400" y="612" font-weight="bold">vent relieves</text><text x="400" y="630" font-size="12">u_vent from field p, bound.m</text>
+<g stroke="#b06000" stroke-width="2.5" fill="none">
+<path d="M260 496 h115" marker-end="url(#ar)"/>
+<path d="M600 496 h95"  marker-end="url(#ar)"/>
+<path d="M810 522 v94 h-215" marker-end="url(#ar)"/>
+<path d="M380 616 h-220 v-90" marker-end="url(#ar)"/>
+</g>
+<text x="285" y="488" font-size="12" fill="#b06000">gas in</text>
+<text x="620" y="488" font-size="12" fill="#b06000">in &gt; out</text>
+<text x="150" y="560" font-size="12" fill="#b06000">P up -> r up (Saint-Robert)</text>
+<text x="620" y="585" font-size="12" fill="#b06000">P up -> u_vent up</text>
+
+<!-- ===== Panel 4: the pin ===== -->
+<text x="20" y="672" font-size="15" font-weight="bold">4. The pin:</text>
+<text x="130" y="672" font-family="Consolas, monospace" font-size="13">SP=-LARGE, Su=LARGE*value  =&gt;  aP*phi = ... + Su - SP*phi  =&gt;  phi = Su/(-SP) = value</text>
+<text x="130" y="692" font-size="12" fill="#555">(supplied Tcoeff.m L57-61 idiom — used for solid cells, inlet face, ignited surface; d_u ~ 0 protects pinned faces from velcorr)</text>
+
+<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#555"/></marker></defs>
+</svg>

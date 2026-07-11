@@ -1,0 +1,49 @@
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Examples] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Examples\Models] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Examples\Models\Control_Engineering] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\Install_Sperte] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\Install_Sperte\Install_Simulink_Lib] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\common] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\SPERTE_Blocks] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\SPERTE_Blocks\sfunctions] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\ref3ma] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Callibration_check_Robot_Ipos_ert_rtw] 
+xKN=0.65 | yK2=0.444 | f_gas=0.556 | dTad=1481 K | T_flame=1779 K | R=352 J/kg/K
+step	 time	 iter	 pbar[Pa] Tvent[K] uvent[m/s] m_in	 m_vent	 massErr	 xf[mm]
+    1    0.0000   1      0.00    298.0    -0.00  0.00e+00  0.00e+00  0.00e+00   60.83
+  100    0.0020  19    200.03    298.3    -0.00  0.00e+00  0.00e+00  4.59e-05   60.83
+  200    0.0040  19    401.21    298.6    -0.00  0.00e+00  0.00e+00  4.78e-05   60.83
+  300    0.0060  21    605.38    298.9    -0.00  0.00e+00  0.00e+00 -9.93e-05   60.83
+  400    0.0080  18    810.30    299.2    -0.00  0.00e+00  0.00e+00  1.20e-04   60.83
+  500    0.0100  18   1018.31    299.5    -0.00  0.00e+00  0.00e+00  1.21e-04   60.83
+  600    0.0120  18   1225.99    299.8    -0.00  0.00e+00  0.00e+00  1.22e-04   60.83
+  700    0.0140  18   1433.33    300.1    -0.00  0.00e+00  0.00e+00  1.23e-04   60.83
+  800    0.0160  18   1640.31    300.4    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+  900    0.0180  18   1846.92    300.7    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+ 1000    0.0200  18   2053.12    301.0    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+ 1100    0.0220  18   2258.91    301.3    -0.00  0.00e+00  0.00e+00  1.25e-04   60.83
+ 1200    0.0240  18   2464.26    301.6    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+ 1300    0.0260  18   2669.15    301.9    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+ 1400    0.0280  18   2873.56    302.2    -0.00  0.00e+00  0.00e+00  1.24e-04   60.83
+ 1500    0.0300  18   3077.44    302.5    -0.00  0.00e+00  0.00e+00  1.23e-04   60.83
+ 1600    0.0320  18   3280.78    302.8    -0.00  0.00e+00  0.00e+00  1.22e-04   60.83
+ 1700    0.0340  18   3483.55    303.1    -0.00  0.00e+00  0.00e+00  1.21e-04   60.83
+ 1800    0.0360  18   3685.70    303.4    -0.00  0.00e+00  0.00e+00  1.20e-04   60.83
+ 1900    0.0380  18   3887.20    303.7    -0.00  0.00e+00  0.00e+00  1.19e-04   60.83
+ 2000    0.0400  18   4088.01    304.0    -0.00  0.00e+00  0.00e+00  1.17e-04   60.83
+ 2100    0.0420  18   4288.09    304.3    -0.00  0.00e+00  0.00e+00  1.15e-04   60.83
+ 2200    0.0440  18   4487.40    304.5    -0.00  0.00e+00  0.00e+00  1.14e-04   60.83
+ 2300    0.0460  18   4685.90    304.8    -0.00  0.00e+00  0.00e+00  1.12e-04   60.83
+ 2400    0.0480  18   4883.56    305.1    -0.00  0.00e+00  0.00e+00  1.11e-04   60.83
+ 2500    0.0500  18   5080.35    305.4    -0.00  0.00e+00  0.00e+00  1.09e-04   60.83

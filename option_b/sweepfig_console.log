@@ -1,0 +1,61 @@
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Examples] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Examples\Models] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Examples\Models\Control_Engineering] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\Install_Sperte] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\Install_Sperte\Install_Simulink_Lib] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Matlab_Scripts\common] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\SPERTE_Blocks] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\SPERTE_Blocks\sfunctions] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation\Tooling\Simulink_Lib\ref3ma] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot Arm\robotarm_student\SPERTE\SPERTE_installation] 
+[Warning: Name is nonexistent or not a directory: C:\Users\20234360\MATLAB Drive\Control of a Robot
+Arm\robotarm_student\SPERTE\SPERTE_installation\Callibration_check_Robot_Ipos_ert_rtw] 
+== postproc_smoke: results\xKN055
+quasi-steady window: t = 0.500..1.000 s (last 50%)
+Tvent_fw  [K]     :     1514.8 (qs mean)       1514.6 (final)
+pvent     [Pa]    :     1766.1 (qs mean)
+uvent     [m/s]   :      83.52 (qs mean)
+m_vent    [kg/s/m]:     0.2654 (qs mean)
+D dilution[kg/kg] :      0.484 (qs mean)  [air per kg vent gas to reach T_c]
+C_form    [g/m3]  :     135.52 (qs mean)  [smoke conc. at the T_c point]
+C_req     [g/m3]  :      0.261           [ln(1/0.02)/(alpha*L), L=5.0 m]
+margin C_form/C_req [-]:    519.6       [allowable further dilution]
+MK2_vented(end) [kg/m] :   0.1718
+A_screen  [m2 per m depth]:  131.8    [alpha*MK2/ln(1/T_req)]
+alpha = 3.0 m2/g (results scale linearly), T_c = 1164 K
+== postproc_smoke: results\xKN065_cool
+quasi-steady window: t = 0.500..1.000 s (last 50%)
+Tvent_fw  [K]     :     1773.3 (qs mean)       1773.0 (final)
+pvent     [Pa]    :     1890.5 (qs mean)
+uvent     [m/s]   :      90.78 (qs mean)
+m_vent    [kg/s/m]:     0.2613 (qs mean)
+D dilution[kg/kg] :      0.840 (qs mean)  [air per kg vent gas to reach T_c]
+C_form    [g/m3]  :     131.35 (qs mean)  [smoke conc. at the T_c point]
+C_req     [g/m3]  :      0.261           [ln(1/0.02)/(alpha*L), L=5.0 m]
+margin C_form/C_req [-]:    503.7       [allowable further dilution]
+MK2_vented(end) [kg/m] :   0.2034
+A_screen  [m2 per m depth]:  156.0    [alpha*MK2/ln(1/T_req)]
+alpha = 3.0 m2/g (results scale linearly), T_c = 1164 K
+== postproc_smoke: results\xKN075
+quasi-steady window: t = 0.500..1.000 s (last 50%)
+Tvent_fw  [K]     :     2386.7 (qs mean)       2386.1 (final)
+pvent     [Pa]    :     1634.6 (qs mean)
+uvent     [m/s]   :      89.82 (qs mean)
+m_vent    [kg/s/m]:     0.2284 (qs mean)
+D dilution[kg/kg] :      1.686 (qs mean)  [air per kg vent gas to reach T_c]
+C_form    [g/m3]  :     118.40 (qs mean)  [smoke conc. at the T_c point]
+C_req     [g/m3]  :      0.261           [ln(1/0.02)/(alpha*L), L=5.0 m]
+margin C_form/C_req [-]:    454.0       [allowable further dilution]
+MK2_vented(end) [kg/m] :   0.2339
+A_screen  [m2 per m depth]:  179.4    [alpha*MK2/ln(1/T_req)]
+alpha = 3.0 m2/g (results scale linearly), T_c = 1164 K
+sweep figure + table written to results/
