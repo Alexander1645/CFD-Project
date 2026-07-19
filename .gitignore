@@ -4,5 +4,10 @@ docs/
 # Simulation outputs (per-run folders, figures, GIFs, sweep results)
 smoke_grenade/results/
 results/
+grenade_model/runs/
 
 we wanna see if this works
+# Option B large run outputs (regenerable; history file can exceed GitHub's 100 MB limit)
+option_b/checkpoint.mat
+option_b/grenade_history.txt
+option_b/hist_partial.mat

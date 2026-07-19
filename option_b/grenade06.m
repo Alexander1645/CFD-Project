@@ -29,8 +29,10 @@ global YK2 YK2_old rho_old R_GAS P_ATM relax_rho TAMB ...
     Jv1 Jv2 Cd_vent relax_vent a_burn n_burn rho_solid t_ramp VENT_OPEN BURN_ON ...
     h_wall lam_wall    % [B2-5/6] wall-cooling parameters (UPDATE_2)
 
-NPI        = 48;        % number of grid cells in x-direction [-]   [B] dev grid
-NPJ        = 22;        % number of grid cells in y-direction [-]   [B] dev grid
+NPI        = 24;        % number of grid cells in x-direction [-]   [B] coarse
+NPJ        = 11;        % number of grid cells in y-direction [-]   [B] full-burn
+                        % grid: half of the 48x22 dev grid (4x fewer cells);
+                        % with Dt doubled this makes the 36 s run ~8x cheaper
 XMAX       = 0.146;     % width of the domain (M18 chamber length) [m]   [B]
 YMAX       = 0.064;     % height of the domain (M18 diameter) [m]        [B]
 MAX_ITER   = 40;        % maximum number of outer iterations [-]
@@ -55,12 +57,14 @@ kappa      = 0.4187;
 ERough     = 9.793;
 Ti         = 0.04;
 
-Dt         = 2.0e-5;    % [B] CFL-limited by the vent jet (design doc sec. 6)
+Dt         = 4.0e-5;    % [B] CFL-limited by the vent jet (design doc sec. 6);
+                        % doubled with the coarse grid (limit scales with Dx)
                         % [B2-3] briefly 1e-5 (checklist knob 2) against the
                         % pressure limit cycle; REVERTED to 2e-5 after [B2-4]
                         % (implicit compressibility in pccoeff.m) removed the
                         % 1/Dt^2 instability at its root — see CHANGELOG.md
-TOTAL_TIME = 1.0;       % [B] dev window; flow is quasi-steady after ~0.5 s
+TOTAL_TIME = 36.0;      % [B] full-burn run (~35 s to burn-out at ~4 mm/s + blow-down)
+SNAP_DT    = 2.5;       % [B3] field-snapshot interval [s] for contour figures
 
 %% [B] ===== Option B physical parameters ==================================
 xKN       = 0.65;       % KNO3 mass fraction (research variable: .55/.65/.75)
@@ -115,7 +119,27 @@ M_prev = gasmass();             % [B] initial gas mass for the balance check
 MK2v   = 0.;                    % [B2-6] cumulative K2CO3 vented [kg/m]
 istep  = 0;
 
-for time = Dt:Dt:TOTAL_TIME
+% [B3] field snapshots every SNAP_DT seconds (for p/|V| contour figures);
+% saved incrementally so a killed run still has all completed snapshots
+nsnap  = round(SNAP_DT/Dt);
+SNAP   = struct('t',{},'p',{},'u',{},'v',{},'T',{},'YK2',{},'rho',{},'xf',{},'Ifr',{});
+
+% [B4] crash-resume: if a checkpoint exists, continue from it. Delete
+% checkpoint.mat to force a fresh run. Written every SNAP_DT alongside the
+% snapshots, so a crash costs at most SNAP_DT of simulated time.
+t_start = Dt;
+if isfile('checkpoint.mat')
+    C = load('checkpoint.mat');
+    u = C.u;  v = C.v;  p = C.p;  pc = C.pc;  T = C.T;  YK2 = C.YK2;
+    rho = C.rho;  mu = C.mu;  Gamma = C.Gamma;
+    xf = C.xf;  Ifr = C.Ifr;  mdotpp = C.mdotpp;
+    istep = C.istep;  hist(1:istep,:) = C.hist_c;
+    MK2v = C.MK2v;  M_prev = C.M_prev;  SNAP = C.SNAP;
+    t_start = C.time + Dt;
+    fprintf('** RESUMING from checkpoint: t=%.4f s (step %d) **\n', C.time, istep);
+end
+
+for time = t_start:Dt:TOTAL_TIME
     istep = istep + 1;
 
     % [B] store previous-TIME-LEVEL fields ONCE per time step (V&M sec. 8.7.1:
@@ -211,6 +235,17 @@ for time = Dt:Dt:TOTAL_TIME
 
     hist(istep,:) = [time pbar Tvent uvent m_in m_vent massErr xf K2prod ...
                      Tvent_fw mdotK2 MK2v pvent];
+
+    % [B3] store a full-field snapshot every SNAP_DT seconds
+    % [B4] ... and a resume checkpoint (full solver state + history so far)
+    if mod(istep, nsnap) == 0
+        SNAP(end+1) = struct('t',time,'p',p,'u',u,'v',v,'T',T,'YK2',YK2, ...
+                             'rho',rho,'xf',xf,'Ifr',Ifr);
+        save('snapshots.mat','SNAP','x','y','x_u','y_v');
+        hist_c = hist(1:istep,:);
+        save('checkpoint.mat','u','v','p','pc','T','YK2','rho','mu','Gamma', ...
+             'xf','Ifr','mdotpp','time','istep','hist_c','MK2v','M_prev','SNAP');
+    end
 
     if ~isfinite(pbar) || ~isfinite(Tvent)
         fprintf('** DIVERGED (NaN) at t=%.5f s — see design doc sec. 7 checklist **\n', time);
