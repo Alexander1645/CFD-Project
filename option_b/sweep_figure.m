@@ -5,13 +5,16 @@
 % same as each run's postproc_summary.txt. Figure generation only — no solver
 % interaction.
 
-xKNs = [0.55 0.65 0.75];
-dirs = {fullfile('results','xKN055'), fullfile('results','xKN065_cool'), ...
-        fullfile('results','xKN075')};
+xKNs = [0.55 0.65 0.70 0.75 0.80];
+n = numel(xKNs);
+dirs = cell(1,n);
+for k = 1:n
+    dirs{k} = fullfile('results', sprintf('xKN%03d', round(100*xKNs(k))));
+end
 
-Tfw = zeros(1,3); D = zeros(1,3); Cf = zeros(1,3); As = zeros(1,3);
-Tfl = zeros(1,3); yK = zeros(1,3); Creq = 0;
-for k = 1:3
+Tfw = zeros(1,n); D = zeros(1,n); Cf = zeros(1,n); As = zeros(1,n);
+Tfl = zeros(1,n); yK = zeros(1,n); Creq = 0;
+for k = 1:n
     o = postproc_smoke(dirs{k});
     Tfw(k) = o.Tfw_qs;  D(k) = o.D_qs;  Cf(k) = o.Cform_qs;  As(k) = o.A_screen;
     Creq = o.Creq;
@@ -54,7 +57,7 @@ saveas(fig, fullfile('results','sweep_summary.png'));
 
 fid = fopen(fullfile('results','sweep_summary.txt'),'w');
 fprintf(fid,'xKN    yK2     Tvent_fw[K]  D[kg/kg]  C_form[g/m3]  A_screen[m2/m]\n');
-for k = 1:3
+for k = 1:n
     fprintf(fid,'%.2f  %.3f  %10.1f  %8.3f  %11.2f  %13.1f\n', ...
         xKNs(k), yK(k), Tfw(k), D(k), 1000*Cf(k), As(k));
 end

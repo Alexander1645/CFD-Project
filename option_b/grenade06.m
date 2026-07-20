@@ -29,10 +29,10 @@ global YK2 YK2_old rho_old R_GAS P_ATM relax_rho TAMB ...
     Jv1 Jv2 Cd_vent relax_vent a_burn n_burn rho_solid t_ramp VENT_OPEN BURN_ON ...
     h_wall lam_wall    % [B2-5/6] wall-cooling parameters (UPDATE_2)
 
-NPI        = 24;        % number of grid cells in x-direction [-]   [B] coarse
-NPJ        = 11;        % number of grid cells in y-direction [-]   [B] full-burn
-                        % grid: half of the 48x22 dev grid (4x fewer cells);
-                        % with Dt doubled this makes the 36 s run ~8x cheaper
+NPI        = 48;        % number of grid cells in x-direction [-]   [B] validated
+NPJ        = 22;        % number of grid cells in y-direction [-]   [B] sweep grid
+                        % (V4-refinement-validated resolution; restored for the
+                        % xKN composition sweep so all points share one grid)
 XMAX       = 0.146;     % width of the domain (M18 chamber length) [m]   [B]
 YMAX       = 0.064;     % height of the domain (M18 diameter) [m]        [B]
 MAX_ITER   = 40;        % maximum number of outer iterations [-]
@@ -57,17 +57,19 @@ kappa      = 0.4187;
 ERough     = 9.793;
 Ti         = 0.04;
 
-Dt         = 4.0e-5;    % [B] CFL-limited by the vent jet (design doc sec. 6);
-                        % doubled with the coarse grid (limit scales with Dx)
+Dt         = 2.0e-5;    % [B] CFL-limited by the vent jet (design doc sec. 6)
                         % [B2-3] briefly 1e-5 (checklist knob 2) against the
                         % pressure limit cycle; REVERTED to 2e-5 after [B2-4]
                         % (implicit compressibility in pccoeff.m) removed the
                         % 1/Dt^2 instability at its root — see CHANGELOG.md
-TOTAL_TIME = 36.0;      % [B] full-burn run (~35 s to burn-out at ~4 mm/s + blow-down)
-SNAP_DT    = 2.5;       % [B3] field-snapshot interval [s] for contour figures
+TOTAL_TIME = 1.0;       % [B] sweep run: quasi-steady plateau reached by t~0.5 s
+SNAP_DT    = 0.1;       % [B3] field-snapshot interval [s]; 10 snapshots/run
 
 %% [B] ===== Option B physical parameters ==================================
-xKN       = 0.65;       % KNO3 mass fraction (research variable: .55/.65/.75)
+xKN       = 0.65;       % KNO3 mass fraction (default; sweep_xKN.txt overrides)
+if isfile('sweep_xKN.txt')                              % [B5] sweep driver hook
+    xKN = str2double(strtrim(fileread('sweep_xKN.txt')));
+end
 TAMB      = 298.;       % ambient temperature [K]
 rho_solid = 1800.;      % KNSu solid charge density [kg/m3]
 a_burn    = 8.26;       % Saint-Robert burn law r=a*P[MPa]^n [mm/s] (Nakka)
